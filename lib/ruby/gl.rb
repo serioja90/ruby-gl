@@ -2,8 +2,13 @@ require "singleton"
 require "opengl"
 require "glu"
 require "glut"
+require "celluloid/current"
+require "thread_safe"
 require "ruby/gl/version"
+require "ruby/gl/constants"
 require "ruby/gl/helper"
+require "ruby/gl/color"
+require "ruby/gl/application"
 
 module Ruby
   class GL
@@ -24,3 +29,7 @@ module Ruby
     end
   end
 end
+
+# Initialize Ruby::GL library in order to be sure
+# to initialize also the GLUT library
+Ruby::GL.instance

@@ -26,4 +26,5 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency "opengl", "~> 0.9"
   spec.add_runtime_dependency "glu", "~> 8.2"
   spec.add_runtime_dependency "glut", "~> 8.2"
+  spec.add_runtime_dependency "thread_safe", "~> 0.3"
 end
