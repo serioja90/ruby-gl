@@ -21,7 +21,6 @@ module Ruby
 
             @type      = EventType[self[:type]]
             @window_id = self[:windowID]
-            @which     = self[:which]
             @state     = self[:state]
             @x         = self[:x]
             @y         = self[:y]
