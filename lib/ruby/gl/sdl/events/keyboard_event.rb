@@ -44,13 +44,14 @@ module Ruby
                  :padding3,  :uint8,
                  :keysym,    Keysymbol
 
-          attr_reader :type
+          attr_reader :type, :window_id, :key, :code, :modifiers
 
           def initialize(pointer)
             super pointer
             keysym     = self[:keysym]
 
             @type      = EventType[self[:type]]
+            @window_id = self[:windowID]
             @pressed   = ( self[:state] == SDL::PRESSED )
             @repeat    = ( self[:repeat] > 0 )
             @key       = keysym.key

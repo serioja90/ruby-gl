@@ -116,7 +116,7 @@ module Ruby
             event = SDL::Event.create_event(event_pointer)
             process_event(event)
           end
-          sleep 0.01
+          sleep 0.001
         end
       end
 

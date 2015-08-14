@@ -8,6 +8,7 @@ module Ruby
         require 'ruby/gl/sdl/events/common_event'
         require 'ruby/gl/sdl/events/window_event'
         require 'ruby/gl/sdl/events/keyboard_event'
+        require 'ruby/gl/sdl/events/mouse_motion_event'
         require 'ruby/gl/sdl/events/quit_event'
         require 'ruby/gl/sdl/events/syswm_event'
 
@@ -17,7 +18,7 @@ module Ruby
                :key,      Ruby::GL::SDL::Events::KeyboardEvent,
                :edit,     :pointer,
                :text,     :pointer,
-               :motion,   :pointer,
+               :motion,   Ruby::GL::SDL::Events::MouseMotionEvent,
                :button,   :pointer,
                :wheel,    :pointer,
                :jaxis,    :pointer,
@@ -37,6 +38,14 @@ module Ruby
                :drop,     :pointer,
                :padding,  [:uint8, 56]
 
+        attr_reader :type
+
+        def initialize(pointer)
+          super pointer
+
+          @type = EventType[self[:type]]
+        end
+
         def self.create_pointer
           FFI::MemoryPointer.new :pointer, Event.size
         end
@@ -44,15 +53,23 @@ module Ruby
         def self.create_event(pointer)
           event  = Event.new(pointer)
           result = nil
+
           case event[:type]
           when EventType[:windowevent]
             result = event[:window]
+
           when EventType[:keydown], EventType[:keyup]
             result = event[:key]
+
+          when EventType[:mousemotion]
+            result = event[:motion]
+
           when EventType[:quit]
             result = event[:quit]
+
           when EventType[:syswmevent]
             result = event[:syswm]
+
           else
             result = event
           end
