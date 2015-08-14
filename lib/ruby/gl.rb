@@ -6,8 +6,10 @@ require "celluloid/current"
 require "thread_safe"
 require "ruby/gl/version"
 require "ruby/gl/constants"
+require "ruby/gl/sdl"
 require "ruby/gl/helper"
 require "ruby/gl/color"
+require "ruby/gl/event_queue"
 require "ruby/gl/application"
 
 module Ruby
@@ -19,7 +21,11 @@ module Ruby
     include Helper
 
     def initialize
+      # initialize the GLUT library
       glutInit()
+
+      # initialize the SDL library
+      SDL.init(SDL::INIT_EVERYTHING)
     end
 
     class << self

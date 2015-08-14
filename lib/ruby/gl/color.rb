@@ -36,6 +36,10 @@ module Ruby
         str
       end
 
+      def to_a
+        [@r, @g, @b, @a].map{|c| c.to_f / 255 }
+      end
+
       private
 
       def from_hex(str)

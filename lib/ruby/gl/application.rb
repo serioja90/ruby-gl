@@ -1,50 +1,41 @@
-
 module Ruby
   class GL
     class Application
       include Gl
       include Glu
       include Glut
+      include SDL::Events
       include Celluloid
+
+      finalizer :quit
+      trap_exit :exit
 
       attr_reader :title, :x, :y, :width, :height, :framerate, :clear_color
 
       def initialize(options = {})
         @title        = options[:title]        || "My 3D Application"
-        @width        = options[:width]        || Ruby::GL::screen_width
-        @height       = options[:height]       || Ruby::GL::screen_height
+        @width        = options[:width]        || Ruby::GL::DEFAULT_WIDTH
+        @height       = options[:height]       || Ruby::GL::DEFAULT_HEIGHT
         @framerate    = options[:framerate]    || Ruby::GL::DEFAULT_FRAMERATE
-        @display_mode = options[:display_mode] || (GLUT_DOUBLE | GLUT_RGBA)
         @clear_color  = options[:clear_color]  || Ruby::GL::Color::BLACK
         @shade_model  = options[:shade_model]  || GL_SMOOTH
+        @world_size   = options[:world_size]   || Ruby::GL::DEFAULT_WORLD_SIZE
         @fullscreen   = !!options[:fullscreen]
+        @maximized    = !!options[:maximized]
         @x            = options[:x].to_i
         @y            = options[:y].to_i
-        @running      = false
-        @timer        = Timers::Group.new
+        @window       = nil
+        @active       = false
 
-        @timer.every(1 / @framerate.to_f) { update }
-      end
-
-      def display_mode=(new_display_mode)
-        @display_mode = new_display_mode
-        glutInitDisplayMode(@display_mode)
+        every(1 / @framerate.to_f) { async.update }
       end
 
       def title=(new_title)
         @title = new_title.to_s
-        glutSetWindowTitle(@title)
+        
+        SDL::WM.set_caption(@title, nil) if @active
 
         @title
-      end
-
-      def framerate=(new_framerate)
-        @framerate = new_framerate.to_i
-
-        @timer.cancel
-        @timer.every(1 / @framerate.to_f) { update }
-
-        @framerate
       end
 
       def set_position(x, y)
@@ -56,74 +47,100 @@ module Ruby
       def resize(width, height)
         @width  = width.to_i
         @height = height.to_i
-        glutInitWindowSize(@width, @height)
       end
 
       def run!
-        return if @running
-        @rinning = true
-        glutInitDisplayMode(@display_mode)
-        glutInitWindowPosition(@x, @y)
-        glutInitWindowSize(@width, @height)
-        glutCreateWindow(@title)
-        glutFullScreen() if @fullscreen
+        return if @active
+        @active  = true
+        setup_sdl_screen
 
         glClearColor(@clear_color.r, @clear_color.g, @clear_color.b, @clear_color.a)
         glShadeModel(@shade_model)
 
-        glutReshapeFunc(self.method(:reshape))
-        glutDisplayFunc(self.method(:update))
-        glutKeyboardFunc(self.method(:keyboard))
-        glutIdleFunc(self.method(:idle))
+        reshape(@width, @height)
 
-        async.start_main_loop
+        async.events_loop
 
-        while @active
-          sleep 0.01
-        end
+        wait :termination
+      end
+
+      def setup_sdl_screen
+        #screen_info = SDL::Screen.info
+
+        SDL::GL.set_attribute(SDL::GL::RED_SIZE, 5)
+        SDL::GL.set_attribute(SDL::GL::GREEN_SIZE, 5)
+        SDL::GL.set_attribute(SDL::GL::BLUE_SIZE, 5)
+        SDL::GL.set_attribute(SDL::GL::ALPHA_SIZE, 5)
+        SDL::GL.set_attribute(SDL::GL::DEPTH_SIZE, 16)
+        SDL::GL.set_attribute(SDL::GL::DOUBLEBUFFER, 1)
+        SDL::GL.set_attribute(SDL::GL::CONTEXT_MAJOR_VERSION, 2)
+        SDL::GL.set_attribute(SDL::GL::CONTEXT_MINOR_VERSION, 1)
+
+        flags = SDL::WINDOW_OPENGL | SDL::WINDOW_SHOWN
+        flags = ( flags | SDL::WINDOW_RESIZABLE )
+        flags = ( flags | SDL::WINDOW_MAXIMIZED ) if @maximized
+        flags = ( flags | SDL::WINDOW_FULLSCREEN ) if @fullscreen
+
+        @window  = SDL::create_window(@title, @x, @y, @width, @height, flags)
+        context  = SDL::GL::create_context(@window)
+        SDL::GL::set_swap_interval(1)
       end
 
       def clear
-        glClear(GL_COLOR_BUFFER_BIT)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()
       end
 
-      def swap_buffers
-        glutSwapBuffers()
-      end
-
-      def flush
-        glFlush()
+      def flip
+        SDL::GL::swap_window(@window)
       end
 
       def update
       end
 
+      def exit(actor = nil, reason = nil)
+        quit
+      end
+
       def quit
-        glutLeaveMainLoop()
+        signal :termination
         @active = false
-        self.terminate
       end
 
       private
 
+      def events_loop
+        event_pointer = SDL::Event.create_pointer
+        while @active
+          while SDL::poll_event(event_pointer) != 0
+            event = SDL::Event.create_event(event_pointer)
+            process_event(event)
+          end
+          sleep 0.01
+        end
+      end
+
       def reshape(width, height)
+        @width  = width
+        @height = height
+        min = [width, height].min.to_f
+        x_ratio = width.to_f / min
+        y_ratio = height.to_f / min
         glViewport(0, 0, width, height)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        glFrustum(-1.0, 1.0, -1.0, 1.0, 1, 100)
+        glFrustum(-x_ratio, x_ratio, -y_ratio, y_ratio, 1, @world_size)
         glMatrixMode(GL_MODELVIEW);
       end
 
-      def keyboard(key, x, y)
-      end
-
-      def idle
-        @timer.wait
-      end
-
-      def start_main_loop
-        glutMainLoop()
+      def process_event(event)
+        case event
+        when WindowEvent
+          reshape(event.data1, event.data2) if event.type == :resized
+          reshape(@width, @height) if event.type == :exposed
+        when QuitEvent
+          quit
+        end
       end
     end
   end
