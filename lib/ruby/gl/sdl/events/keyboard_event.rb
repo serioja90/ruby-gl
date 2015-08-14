@@ -11,14 +11,24 @@ module Ruby
                  :mod,      :uint16,
                  :unused,   :uint32
 
-          attr_reader :key, :code, :modifier
+          attr_reader :key, :code, :modifiers
 
           def initialize(pointer)
             super pointer
 
-            @key      = self[:scancode]
-            @code     = self[:sym]
-            @modifier = KeyModifier[self[:mod]]
+            @key       = self[:scancode]
+            @code      = self[:sym]
+            @modifiers = []
+            unless self[:mod] == 0
+              # we are sure that there're modifiers
+              symbols = KeyModifier.symbols.dup
+              symbols.delete :none
+              symbols.delete :reserved
+
+              symbols.each do |modifier|
+                @modifiers << modifier if (KeyModifier[modifier] & self[:mod]) != 0
+              end
+            end
           end
         end
 
@@ -38,14 +48,14 @@ module Ruby
 
           def initialize(pointer)
             super pointer
-            @type    = EventType[self[:type]]
-            @pressed = ( self[:state] == SDL::PRESSED )
-            @repeat  = ( self[:repeat] > 0 )
+            keysym     = self[:keysym]
 
-            keysym    = self[:keysym]
-            @key      = keysym.key
-            @code     = keysym.code
-            @modifier = keysym.modifier
+            @type      = EventType[self[:type]]
+            @pressed   = ( self[:state] == SDL::PRESSED )
+            @repeat    = ( self[:repeat] > 0 )
+            @key       = keysym.key
+            @code      = keysym.code
+            @modifiers = keysym.modifiers
           end
 
           def pressed?
