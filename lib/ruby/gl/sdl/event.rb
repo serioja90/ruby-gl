@@ -7,13 +7,14 @@ module Ruby
 
         require 'ruby/gl/sdl/events/common_event'
         require 'ruby/gl/sdl/events/window_event'
+        require 'ruby/gl/sdl/events/keyboard_event'
         require 'ruby/gl/sdl/events/quit_event'
         require 'ruby/gl/sdl/events/syswm_event'
 
         layout :type,     :uint32,
                :common,   Ruby::GL::SDL::Events::CommonEvent,
                :window,   Ruby::GL::SDL::Events::WindowEvent,
-               :key,      :pointer,
+               :key,      Ruby::GL::SDL::Events::KeyboardEvent,
                :edit,     :pointer,
                :text,     :pointer,
                :motion,   :pointer,
@@ -46,16 +47,17 @@ module Ruby
           case event[:type]
           when EventType[:windowevent]
             result = event[:window]
-            puts result.inspect
+          when EventType[:keydown], EventType[:keyup]
+            result = event[:key]
           when EventType[:quit]
             result = event[:quit]
-            puts result.inspect
           when EventType[:syswmevent]
             result = event[:syswm]
-            puts result.inspect
           else
             result = event
           end
+
+          puts result.inspect
 
           result
         end

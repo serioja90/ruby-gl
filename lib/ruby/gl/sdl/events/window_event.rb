@@ -29,6 +29,14 @@ module Ruby
             @data1     = self[:data1]
             @data2     = self[:data2]
           end
+
+          def method_missing(name, *args, &block)
+            if name.to_s.end_with?("?")
+              return @type.to_s == name.to_s.gsub("?", "")
+            else
+              super name, *args, &block
+            end
+          end
         end
       end
     end

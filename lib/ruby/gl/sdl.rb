@@ -1,4 +1,5 @@
 require 'ffi'
+require 'ruby/gl/sdl/keyboard'
 require 'ruby/gl/sdl/events'
 require 'ruby/gl/sdl/event'
 require 'ruby/gl/sdl/window'
@@ -37,6 +38,9 @@ module Ruby
       WINDOW_FULLSCREEN_DESKTOP = ( WINDOW_FULLSCREEN | 0x00001000 )
       WINDOW_ALLOW_HIGHDPI      = 0x00002000
       WINDOW_MOUSE_CAPTURE      = 0x00004000
+
+      RELEASED = 0
+      PRESSED  = 1
 
       # SDL::init(init_flags)
       attach_function :init, :SDL_Init, [:uint], :int

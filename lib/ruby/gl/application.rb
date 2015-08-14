@@ -136,8 +136,7 @@ module Ruby
       def process_event(event)
         case event
         when WindowEvent
-          reshape(event.data1, event.data2) if event.type == :resized
-          reshape(@width, @height) if event.type == :exposed
+          reshape(event.data1, event.data2) if event.resized?
         when QuitEvent
           quit
         end
