@@ -9,6 +9,7 @@ module Ruby
         require 'ruby/gl/sdl/events/window_event'
         require 'ruby/gl/sdl/events/keyboard_event'
         require 'ruby/gl/sdl/events/mouse_motion_event'
+        require 'ruby/gl/sdl/events/mouse_button_event'
         require 'ruby/gl/sdl/events/quit_event'
         require 'ruby/gl/sdl/events/syswm_event'
 
@@ -19,7 +20,7 @@ module Ruby
                :edit,     :pointer,
                :text,     :pointer,
                :motion,   Ruby::GL::SDL::Events::MouseMotionEvent,
-               :button,   :pointer,
+               :button,   Ruby::GL::SDL::Events::MouseButtonEvent,
                :wheel,    :pointer,
                :jaxis,    :pointer,
                :jball,    :pointer,
@@ -63,6 +64,9 @@ module Ruby
 
           when EventType[:mousemotion]
             result = event[:motion]
+
+          when EventType[:mousebuttondown], EventType[:mousebuttonup]
+            result = event[:button]
 
           when EventType[:quit]
             result = event[:quit]

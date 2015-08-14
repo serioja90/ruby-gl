@@ -69,6 +69,14 @@ module Ruby
           :focus_lost,
           :close
         )
+
+        MouseButton = enum(
+          :left,   1,
+          :middle, 2,
+          :right,  3,
+          :x1,     4,
+          :x2,     5
+        )
       end
     end
   end
