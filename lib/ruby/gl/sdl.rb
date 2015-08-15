@@ -42,11 +42,18 @@ module Ruby
       RELEASED = 0
       PRESSED  = 1
 
+      callback :thread_function, [:pointer], :int
+      callback :timer_callback,  [:uint32, :pointer], :uint32
+
       # SDL::init(init_flags)
-      attach_function :init, :SDL_Init, [:uint], :int
-      attach_function :create_window, :SDL_CreateWindow, [:string, :int, :int, :int, :int, :uint], Window
-      attach_function :get_window_surface, :SDL_GetWindowSurface, [Window], Surface
-      attach_function :poll_event, :SDL_PollEvent, [:pointer], :int
+      attach_function :add_timer,             :SDL_AddTimer, [:uint32, :timer_callback, :pointer], :pointer
+      attach_function :init,                  :SDL_Init, [:uint], :int
+      attach_function :create_thread,         :SDL_CreateThread, [:thread_function, :string, :pointer], :pointer
+      attach_function :create_window,         :SDL_CreateWindow, [:string, :int, :int, :int, :int, :uint], Window
+      attach_function :get_window_surface,    :SDL_GetWindowSurface, [Window], Surface
+      attach_function :poll_event,            :SDL_PollEvent, [:pointer], :int
+      attach_function :wait_event,            :SDL_WaitEvent, [:pointer], :int
+      attach_function :wait_thread,           :SDL_WaitThread, [:pointer, :int], :void
       attach_function :update_window_surface, :SDL_UpdateWindowSurface, [Window], :int
     end
   end

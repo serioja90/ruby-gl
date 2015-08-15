@@ -27,7 +27,9 @@ module Ruby
         @window       = nil
         @active       = false
 
-        every(1 / @framerate.to_f) { async.update }
+        Ruby::GL::Timer.new(1 / @framerate.to_f) do
+          update
+        end
       end
 
       def title=(new_title)
@@ -59,7 +61,9 @@ module Ruby
 
         reshape(@width, @height)
 
-        async.events_loop
+        Ruby::GL::EventQueue.on_event do |event|
+          process_event(event)
+        end
 
         wait :termination
       end
@@ -108,17 +112,6 @@ module Ruby
       end
 
       private
-
-      def events_loop
-        event_pointer = SDL::Event.create_pointer
-        while @active
-          while SDL::poll_event(event_pointer) != 0
-            event = SDL::Event.create_event(event_pointer)
-            process_event(event)
-          end
-          sleep 0.001
-        end
-      end
 
       def reshape(width, height)
         @width  = width

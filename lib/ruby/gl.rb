@@ -10,6 +10,7 @@ require "ruby/gl/sdl"
 require "ruby/gl/helper"
 require "ruby/gl/color"
 require "ruby/gl/event_queue"
+require "ruby/gl/timer"
 require "ruby/gl/application"
 
 module Ruby
