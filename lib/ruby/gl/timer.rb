@@ -4,10 +4,10 @@ module Ruby
     class Timer
       include Celluloid
 
-      def initialize(milliseconds, &block)
+      def initialize(interval, &block)
         @callback = block
         @timer = Timers::Group.new
-        @timer.every(milliseconds.to_f / 1000 ) { @callback.call }
+        @timer.every(interval) { @callback.call }
         
         async.run!
       end

@@ -22,6 +22,7 @@ module Ruby
         @world_size   = options[:world_size]   || Ruby::GL::DEFAULT_WORLD_SIZE
         @fullscreen   = !!options[:fullscreen]
         @maximized    = !!options[:maximized]
+        @vsync        = !!(options[:vsync].nil? ? true : options[:vsync])
         @x            = options[:x].to_i
         @y            = options[:y].to_i
         @window       = nil
@@ -87,7 +88,7 @@ module Ruby
 
         @window  = SDL::create_window(@title, @x, @y, @width, @height, flags)
         context  = SDL::GL::create_context(@window)
-        SDL::GL::set_swap_interval(1)
+        SDL::GL::set_swap_interval(@vsync ? 1 : 0)
       end
 
       def clear
