@@ -1,7 +1,7 @@
 module Ruby
   class GL
     class Application
-      include Gl
+      include OpenGL
       include Glu
       include Glut
       include SDL::Events
@@ -41,17 +41,6 @@ module Ruby
         @title
       end
 
-      def set_position(x, y)
-        @x = x.to_i
-        @y = y.to_i
-        glutInitWindowPosition(@x, @y)
-      end
-
-      def resize(width, height)
-        @width  = width.to_i
-        @height = height.to_i
-      end
-
       def run!
         return if @active
         @active  = true
@@ -70,16 +59,14 @@ module Ruby
       end
 
       def setup_sdl_screen
-        #screen_info = SDL::Screen.info
-
         SDL::GL.set_attribute(SDL::GL::RED_SIZE, 5)
         SDL::GL.set_attribute(SDL::GL::GREEN_SIZE, 5)
         SDL::GL.set_attribute(SDL::GL::BLUE_SIZE, 5)
         SDL::GL.set_attribute(SDL::GL::ALPHA_SIZE, 5)
         SDL::GL.set_attribute(SDL::GL::DEPTH_SIZE, 16)
         SDL::GL.set_attribute(SDL::GL::DOUBLEBUFFER, 1)
-        SDL::GL.set_attribute(SDL::GL::CONTEXT_MAJOR_VERSION, 2)
-        SDL::GL.set_attribute(SDL::GL::CONTEXT_MINOR_VERSION, 1)
+        SDL::GL.set_attribute(SDL::GL::CONTEXT_MAJOR_VERSION, 3)
+        SDL::GL.set_attribute(SDL::GL::CONTEXT_MINOR_VERSION, 0)
 
         flags = SDL::WINDOW_OPENGL | SDL::WINDOW_SHOWN
         flags = ( flags | SDL::WINDOW_RESIZABLE )
