@@ -1,5 +1,4 @@
 require "singleton"
-require "opengl"
 require "glu"
 require "glut"
 require "celluloid/current"
@@ -17,7 +16,6 @@ require "ruby/gl/application"
 module Ruby
   class GL
     include Singleton
-    include Gl
     include Glu
     include Glut
     include Helper
