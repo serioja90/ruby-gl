@@ -1,5 +1,6 @@
 require 'ffi'
 require 'ruby/gl/opengl/types'
+require 'ruby/gl/opengl/utils'
 require 'ruby/gl/opengl/miscellaneous'
 require 'ruby/gl/opengl/depth_buffer'
 require 'ruby/gl/opengl/accumulation_buffer'

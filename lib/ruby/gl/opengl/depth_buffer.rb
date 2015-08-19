@@ -10,7 +10,15 @@ module Ruby
         # Depth Buffer
         attach_function :glClearDepth, [GLclampd], :void
         attach_function :glDepthFunc,  [GLenum], :void
-        attach_function :glDepthMask,  [GLboolean], :void
+
+
+        attach_function :_glDepthMask, :glDepthMask, [GLboolean], :void
+
+        def glDepthMask(flag)
+          _glDepthMask(flag ? GL_TRUE : GL_FALSE)
+        end
+
+
         attach_function :glDepthRange, [GLclampd, GLclampd], :void
 
       end
