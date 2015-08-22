@@ -22,6 +22,7 @@ module Ruby
         GLdouble   = :double
         GLclampd   = :double
         GLchar     = :char
+        GLhalf     = :ushort
       end
     end
   end
