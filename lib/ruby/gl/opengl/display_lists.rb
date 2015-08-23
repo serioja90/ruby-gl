@@ -8,7 +8,12 @@ module Ruby
         ffi_lib 'GL'
 
         # Display Lists
-        attach_function :glIsList,      [GLuint], GLboolean
+        attach_function :_glIsList, :glIsList, [GLuint], GLboolean
+
+        def glIsList(list)
+          return (_glIsList(list) == GL_TRUE)
+        end
+
         attach_function :glDeleteLists, [GLuint, GLsizei], :void
         attach_function :glGenLists,    [GLsizei], GLuint
         attach_function :glNewList,     [GLuint, GLenum], :void

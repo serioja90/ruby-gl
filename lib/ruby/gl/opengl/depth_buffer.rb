@@ -4,6 +4,7 @@ module Ruby
     module OpenGL
       module DepthBuffer
         include Ruby::GL::OpenGL::Types
+        include Ruby::GL::OpenGL::Utils
         extend FFI::Library
         ffi_lib 'GL'
 
@@ -15,7 +16,7 @@ module Ruby
         attach_function :_glDepthMask, :glDepthMask, [GLboolean], :void
 
         def glDepthMask(flag)
-          _glDepthMask(flag ? GL_TRUE : GL_FALSE)
+          _glDepthMask(to_glbool(flag))
         end
 
 

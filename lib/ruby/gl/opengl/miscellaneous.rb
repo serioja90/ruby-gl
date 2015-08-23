@@ -59,15 +59,19 @@ module Ruby
         attach_function :glFlush,              [], :void
         attach_function :glHint,               [GLenum, GLenum], :void
 
-        # OpenGL 1.3
+
+        ##############
+        # OpenGL 1.3 #
+        ##############
+
         attach_function :_glSampleCoverage, :glSampleCoverage, [GLclampf, GLboolean], :void
         def glSampleCoverage(value, invert)
-          _glSampleCoverage(value, (invert ? (invert == GL_TRUE) : GL_FALSE))
+          _glSampleCoverage(value, to_glbool(invert))
         end
 
         attach_function :_glColorMask, :glColorMask, [GLboolean, GLboolean, GLboolean, GLboolean], :void
         def glColorMask(red, green, blue, alpha)
-          r, g, b, a = [red, green, blue, alpha].map{|col| col ? (col == GL_TRUE) : GL_FALSE }
+          r, g, b, a = [red, green, blue, alpha].map{|col| to_glbool(col) }
           _glColorMask(r, g, b, a)
         end
 
@@ -77,7 +81,7 @@ module Ruby
           when Fixnum
             _glEdgeFlag(arg)
           when TrueClass, FalseClass
-            _glEdgeFlag(arg ? GL_TRUE : GL_FALSE)
+            _glEdgeFlag(to_glbool(arg))
           when Array
             _glEdgeFlagv(arg)
           else
@@ -115,7 +119,10 @@ module Ruby
         attach_function :glGetIntegerv,        [GLenum, :pointer], :void
 
 
-        # OpenGL 1.4
+        ##############
+        # OpenGL 1.4 #
+        ##############
+
         attach_function :glBlendFuncSeparate, [GLenum, GLenum, GLenum, GLenum], :void
         attach_function :_glMultiDrawArrays, :glMultiDrawArrays, [GLenum, :pointer, :pointer, GLsizei], :void
 
@@ -303,7 +310,10 @@ module Ruby
         attach_function :glBlendEquation,         [GLenum], :void
 
 
-        # OpenGL 1.5
+        ##############
+        # OpenGL 1.5 #
+        ##############
+
         attach_function :_glGenQueries, :glGenQueries, [GLsizei, :pointer], :void
 
         def glGenQueries(num)
@@ -426,9 +436,17 @@ module Ruby
         attach_function :glGetBufferPointerv,     [GLenum, GLenum, :pointer], :void
 
 
-        # OpenGL 2.0
+        ##############
+        # OpenGL 2.0 #
+        ##############
+
         attach_function :glBlendEquationSeparate,    [GLenum, GLenum], :void
-        attach_function :glDrawBuffers,              [GLsizei, :pointer], :void
+        attach_function :_glDrawBuffers, :glDrawBuffers, [GLsizei, :pointer], :void
+
+        def glDrawBuffers(buffers)
+          _glDrawBuffers(buffers.size, array_to_pointer(buffers, GLenum))
+        end
+
         attach_function :glStencilOpSeparate,        [GLenum, GLenum, GLenum, GLenum], :void
         attach_function :glStencilFuncSeparate,      [GLenum, GLenum, GLint, GLuint], :void
         attach_function :glStencilMaskSeparate,      [GLenum, GLuint], :void
@@ -442,15 +460,101 @@ module Ruby
         attach_function :glDetachShader,             [GLuint, GLuint], :void
         attach_function :glDisableVertexAttribArray, [GLuint], :void
         attach_function :glEnableVertexAttribArray,  [GLuint], :void
-        attach_function :glGetActiveAttrib,          [GLuint, GLuint, GLsizei, :pointer, :pointer, :pointer, :string], :void
-        attach_function :glGetActiveUniform,         [GLuint, GLuint, GLsizei, :pointer, :pointer, :pointer, :string], :void
-        attach_function :glGetAttachedShaders,       [GLuint, GLsizei, :pointer, :pointer], :void
+        attach_function :_glGetActiveAttrib, :glGetActiveAttrib, [GLuint, GLuint, GLsizei, :pointer, :pointer, :pointer, :pointer], :void
+
+        def glGetActiveAttrib(program, index, buff_size)
+          length = FFI::MemoryPointer.new GLsizei
+          size   = FFI::MemoryPointer.new GLint
+          type   = FFI::MemoryPointer.new GLenum
+          name   = FFI::MemoryPointer.new GLchar, buff_size
+          _glGetActiveAttrib(program, index, buff_size, length, size, type, name)
+
+          return {
+            length: length.get_int(0),
+            size:   size.get_int(0),
+            type:   type.get_uint(0),
+            name:   name.read_string
+          }
+        end
+
+
+        attach_function :_glGetActiveUniform, :glGetActiveUniform, [GLuint, GLuint, GLsizei, :pointer, :pointer, :pointer, :pointer], :void
+
+        def glGetActiveUniform(program, index, buff_size)
+          length = FFI::MemoryPointer.new GLsizei
+          size   = FFI::MemoryPointer.new GLint
+          type   = FFI::MemoryPointer.new GLenum
+          name   = FFI::MemoryPointer.new GLchar, buff_size
+          _glGetActiveUniform(program, index, buff_size, length, size, type, name)
+
+          return {
+            length: length.get_int(0),
+            size:   size.get_int(0),
+            type:   type.get_uint(0),
+            name:   name.read_string
+          }
+        end
+
+        attach_function :_glGetAttachedShaders, :glGetAttachedShaders, [GLuint, GLsizei, :pointer, :pointer], :void
+
+        def glGetAttachedShaders(program, max_count)
+          count   = FFI::MemoryPointer.new GLsizei
+          shaders = FFI::MemoryPointer.new GLuint, max_count
+          _glGetAttachedShaders(program, max_count, count, shaders)
+
+          return shaders.read_array_of_uint count
+        end
+
         attach_function :glGetAttribLocation,        [GLuint, :string], GLint
-        attach_function :glGetProgramiv,             [GLuint, GLenum, :pointer], :void
-        attach_function :glGetProgramInfoLog,        [GLuint, GLsizei, :pointer, :string], :void
-        attach_function :glGetShaderiv,              [GLuint, GLenum, :pointer], :void
-        attach_function :glGetShaderInfoLog,         [GLuint, GLsizei, :pointer, :string], :void
-        attach_function :glGetShaderSource,          [GLuint, GLsizei, :pointer, :string], :void
+        attach_function :_glGetProgramiv, :glGetProgramiv, [GLuint, GLenum, :pointer], :void
+
+        def glGetProgramiv(program, pname)
+          params = FFI::MemoryPointer.new GLint
+          _glGetProgramiv(program, pname, params)
+
+          return params.read_int
+        end
+
+        attach_function :_glGetProgramInfoLog, :glGetProgramInfoLog, [GLuint, GLsizei, :pointer, :pointer], :void
+
+        def glGetProgramInfoLog(program, max_length)
+          length = FFI::MemoryPointer.new GLsizei
+          log    = FFI::MemoryPointer.new GLchar, max_length
+          _glGetProgramInfoLog(program, max_length, length, log)
+
+          return log.read_string.force_encoding('UTF-8')
+        end
+
+        attach_function :_glGetShaderiv, :glGetShaderiv, [GLuint, GLenum, :pointer], :void
+
+        def glGetShaderiv(shader, pname)
+          params = FFI::MemoryPointer.new GLint
+          _glGetShaderiv(shader, pname, params)
+
+          return params.read_int
+        end
+
+
+        attach_function :_glGetShaderInfoLog, :glGetShaderInfoLog, [GLuint, GLsizei, :pointer, :pointer], :void
+
+        def glGetShaderInfoLog(shader, max_length)
+          length  = FFI::MemoryPointer.new GLsizei
+          log     = FFI::MemoryPointer.new GLchar, max_length
+          _glGetShaderInfoLog(shader, max_length, length, log)
+
+          return log.read_string.force_encoding('UTF-8')
+        end
+
+        attach_function :_glGetShaderSource, :glGetShaderSource, [GLuint, GLsizei, :pointer, :pointer], :void
+
+        def glGetShaderSource(shader, buffer_size)
+          length = FFI::MemoryPointer.new GLsizei
+          source = FFI::MemoryPointer.new GLchar, buffer_size
+          _glGetShaderSource(shader, buffer_size, length, source)
+
+          return source.read_string.force_encoding('UTF-8')
+        end
+
         attach_function :glGetUniformLocation,       [GLuint, :string], GLint
         attach_function :glGetUniformfv,             [GLuint, GLint, :pointer], :void
         attach_function :glGetUniformiv,             [GLuint, GLint, :pointer], :void
@@ -458,10 +562,32 @@ module Ruby
         attach_function :glGetVertexAttribfv,        [GLuint, GLenum, :pointer], :void
         attach_function :glGetVertexAttribiv,        [GLuint, GLenum, :pointer], :void
         attach_function :glGetVertexAttribPointerv,  [GLuint, GLenum, :pointer], :void
-        attach_function :glIsProgram,                [GLuint], GLboolean
-        attach_function :glIsShader,                 [GLuint], GLboolean
+        attach_function :_glIsProgram, :glIsProgram, [GLuint], GLboolean
+
+        def glIsProgram(program)
+          return (_glIsProgram(program) == GL_TRUE)
+        end
+
+        attach_function :_glIsShader, :glIsShader, [GLuint], GLboolean
+
+        def glIsShader(shader)
+          return (_glIsShader(shader) == GL_TRUE)
+        end
+
         attach_function :glLinkProgram,              [GLuint], :void
-        attach_function :glShaderSource,             [GLuint, GLsizei, :string, :pointer], :void
+        attach_function :_glShaderSource, :glShaderSource, [GLuint, GLsizei, :pointer, :pointer], :void
+
+        def glShaderSource(shader, source)
+          sources = [source] if source.is_a?(String)
+          sources_ptr = FFI::MemoryPointer.new :pointer, sources.size
+          length      = FFI::MemoryPointer.new GLint, sources.size
+          sources.each do |source|
+            sources_ptr.write_pointer FFI::MemoryPointer.from_string(source)
+            length.write_int source.length
+          end
+          _glShaderSource(shader, sources.size, sources_ptr, length)
+        end
+
         attach_function :glUseProgram,               [GLuint], :void
         attach_function :glUniform1f,                [GLint, GLfloat], :void
         attach_function :glUniform2f,                [GLint, GLfloat, GLfloat], :void
@@ -471,54 +597,227 @@ module Ruby
         attach_function :glUniform2i,                [GLint, GLint, GLint], :void
         attach_function :glUniform3i,                [GLint, GLint, GLint, GLint], :void
         attach_function :glUniform4i,                [GLint, GLint, GLint, GLint, GLint], :void
-        attach_function :glUniform1fv,               [GLint, GLsizei,:pointer], :void
-        attach_function :glUniform2fv,               [GLint, GLsizei,:pointer], :void
-        attach_function :glUniform3fv,               [GLint, GLsizei,:pointer], :void
-        attach_function :glUniform4fv,               [GLint, GLsizei,:pointer], :void
-        attach_function :glUniform1iv,               [GLint, GLsizei,:pointer], :void
-        attach_function :glUniform2iv,               [GLint, GLsizei,:pointer], :void
-        attach_function :glUniform3iv,               [GLint, GLsizei,:pointer], :void
-        attach_function :glUniform4iv,               [GLint, GLsizei,:pointer], :void
-        attach_function :glUniformMatrix2fv,         [GLint, GLsizei, GLboolean, :pointer], :void
-        attach_function :glUniformMatrix3fv,         [GLint, GLsizei, GLboolean, :pointer], :void
-        attach_function :glUniformMatrix4fv,         [GLint, GLsizei, GLboolean, :pointer], :void
+        attach_function :_glUniform1fv, :glUniform1fv, [GLint, GLsizei,:pointer], :void
+
+        def glUniform1fv(location, value)
+          _glUniform1fv(location, value.count, array_to_pointer(value, GLfloat))
+        end
+
+        attach_function :_glUniform2fv, :glUniform2fv, [GLint, GLsizei,:pointer], :void
+
+        def glUniform2fv(location, value)
+          _glUniform2fv(location, value.count, array_to_pointer(value, GLfloat))
+        end
+
+        attach_function :_glUniform3fv, :glUniform3fv, [GLint, GLsizei,:pointer], :void
+
+        def glUniform3fv(location, value)
+          _glUniform3fv(location, value.count, array_to_pointer(value, GLfloat))
+        end
+
+        attach_function :_glUniform4fv, :glUniform4fv, [GLint, GLsizei,:pointer], :void
+
+        def glUniform4fv(location, value)
+          _glUniform4fv(location, value.count, array_to_pointer(value, GLfloat))
+        end
+
+        attach_function :_glUniform1iv, :glUniform1iv, [GLint, GLsizei,:pointer], :void
+
+        def glUniform1iv(location, value)
+          _glUniform1iv(location, value.count, array_to_pointer(value, GLint))
+        end
+
+        attach_function :_glUniform2iv, :glUniform2iv, [GLint, GLsizei,:pointer], :void
+
+        def glUniform2iv(location, value)
+          _glUniform2iv(location, value.count, array_to_pointer(value, GLint))
+        end
+
+        attach_function :_glUniform3iv, :glUniform3iv, [GLint, GLsizei,:pointer], :void
+
+        def glUniform3iv(location, value)
+          _glUniform3iv(location, value.count, array_to_pointer(value, GLint))
+        end
+
+        attach_function :_glUniform4iv, :glUniform4iv, [GLint, GLsizei,:pointer], :void
+
+        def glUniform4iv(location, value)
+          _glUniform4iv(location, value.count, array_to_pointer(value, GLint))
+        end
+
+        attach_function :_glUniformMatrix2fv, :glUniformMatrix2fv, [GLint, GLsizei, GLboolean, :pointer], :void
+
+        def glUniformMatrix2fv(location, transpose, value)
+          flat_value = value.flatten
+          _glUniformMatrix2fv(location, flat_value.count, to_glbool(transpose), array_to_pointer(flat_value, GLfloat))
+        end
+
+        attach_function :_glUniformMatrix3fv, :glUniformMatrix3fv, [GLint, GLsizei, GLboolean, :pointer], :void
+
+        def glUniformMatrix3fv(location, transpose, value)
+          flat_value = value.flatten
+          _glUniformMatrix3fv(location, flat_value.count, to_glbool(transpose), array_to_pointer(flat_value, GLfloat))
+        end
+
+        attach_function :_glUniformMatrix4fv, :glUniformMatrix4fv, [GLint, GLsizei, GLboolean, :pointer], :void
+
+        def glUniformMatrix4fv(location, transpose, value)
+          flat_value = value.flatten
+          _glUniformMatrix4fv(location, flat_value.count, to_glbool(transpose), array_to_pointer(flat_value, GLfloat))
+        end
+
         attach_function :glValidateProgram,          [GLuint], :void
         attach_function :glVertexAttrib1d,           [GLuint, GLdouble], :void
-        attach_function :glVertexAttrib1dv,          [GLuint, :pointer], :void
+        attach_function :_glVertexAttrib1dv, :glVertexAttrib1dv, [GLuint, :pointer], :void
+
+        def glVertexAttrib1dv(index, value)
+          _glVertexAttrib1dv(index, array_to_pointer(value, GLdouble))
+        end
+
         attach_function :glVertexAttrib1f,           [GLuint, GLfloat], :void
-        attach_function :glVertexAttrib1fv,          [GLuint, :pointer], :void
+        attach_function :_glVertexAttrib1fv, :glVertexAttrib1fv, [GLuint, :pointer], :void
+
+        def glVertexAttrib1fv(index, value)
+          _glVertexAttrib1fv(index, array_to_pointer(value, GLfloat))
+        end
+
         attach_function :glVertexAttrib1s,           [GLuint, GLshort], :void
-        attach_function :glVertexAttrib1sv,          [GLuint, :pointer], :void
+        attach_function :_glVertexAttrib1sv, :glVertexAttrib1sv, [GLuint, :pointer], :void
+
+        def glVertexAttrib1sv(index, value)
+          _glVertexAttrib1sv(index, array_to_pointer(value, GLshort))
+        end
+
         attach_function :glVertexAttrib2d,           [GLuint, GLdouble, GLdouble], :void
-        attach_function :glVertexAttrib2dv,          [GLuint, :pointer], :void
+        attach_function :_glVertexAttrib2dv, :glVertexAttrib2dv, [GLuint, :pointer], :void
+
+        def glVertexAttrib2dv(index, value)
+          _glVertexAttrib2dv(index, array_to_pointer(value, GLdouble))
+        end
+
         attach_function :glVertexAttrib2f,           [GLuint, GLfloat, GLfloat], :void
-        attach_function :glVertexAttrib2fv,          [GLuint, :pointer], :void
+        attach_function :_glVertexAttrib2fv, :glVertexAttrib2fv, [GLuint, :pointer], :void
+
+        def glVertexAttrib2fv(index, value)
+          _glVertexAttrib2fv(index, array_to_pointer(value, GLfloat))
+        end
+
         attach_function :glVertexAttrib2s,           [GLuint, GLshort, GLshort], :void
-        attach_function :glVertexAttrib2sv,          [GLuint, :pointer], :void
+        attach_function :_glVertexAttrib2sv, :glVertexAttrib2sv, [GLuint, :pointer], :void
+
+        def glVertexAttrib2sv(index, value)
+          _glVertexAttrib2sv(index, array_to_pointer(value, GLshort))
+        end
+
         attach_function :glVertexAttrib3d,           [GLuint, GLdouble, GLdouble, GLdouble], :void
-        attach_function :glVertexAttrib3dv,          [GLuint, :pointer], :void
+        attach_function :_glVertexAttrib3dv, :glVertexAttrib3dv, [GLuint, :pointer], :void
+
+        def glVertexAttrib3dv(index, value)
+          _glVertexAttrib3dv(index, array_to_pointer(value, GLdouble))
+        end
+
         attach_function :glVertexAttrib3f,           [GLuint, GLfloat, GLfloat, GLfloat], :void
-        attach_function :glVertexAttrib3fv,          [GLuint, :pointer], :void
+        attach_function :_glVertexAttrib3fv, :glVertexAttrib3fv, [GLuint, :pointer], :void
+
+        def glVertexAttrib3fv(index, value)
+          _glVertexAttrib3fv(index, array_to_pointer(value, GLfloat))
+        end
+
         attach_function :glVertexAttrib3s,           [GLuint, GLshort, GLshort, GLshort], :void
-        attach_function :glVertexAttrib3sv,          [GLuint, :pointer], :void
-        attach_function :glVertexAttrib4Nbv,         [GLuint, :pointer], :void
-        attach_function :glVertexAttrib4Niv,         [GLuint, :pointer], :void
-        attach_function :glVertexAttrib4Nsv,         [GLuint, :pointer], :void
+        attach_function :_glVertexAttrib3sv, :glVertexAttrib3sv, [GLuint, :pointer], :void
+
+        def glVertexAttrib3sv(index, value)
+          _glVertexAttrib3sv(index, array_to_pointer(value, GLshort))
+        end
+
+        attach_function :_glVertexAttrib4Nbv, :glVertexAttrib4Nbv, [GLuint, :pointer], :void
+
+        def glVertexAttrib4Nbv(index, value)
+          _glVertexAttrib4Nbv(index, array_to_pointer(value, GLbyte))
+        end
+
+        attach_function :_glVertexAttrib4Niv, :glVertexAttrib4Niv, [GLuint, :pointer], :void
+
+        def glVertexAttrib4Niv(index, value)
+          _glVertexAttrib4Niv(index, array_to_pointer(value, GLint))
+        end
+
+        attach_function :_glVertexAttrib4Nsv, :glVertexAttrib4Nsv, [GLuint, :pointer], :void
+
+        def glVertexAttrib4Nsv(index, value)
+          _glVertexAttrib4Nsv(index, array_to_pointer(value, GLshort))
+        end
+
         attach_function :glVertexAttrib4Nub,         [GLuint, GLubyte, GLubyte, GLubyte, GLubyte], :void
-        attach_function :glVertexAttrib4Nubv,        [GLuint, :pointer], :void
-        attach_function :glVertexAttrib4Nuiv,        [GLuint, :pointer], :void
-        attach_function :glVertexAttrib4Nusv,        [GLuint, :pointer], :void
-        attach_function :glVertexAttrib4bv,          [GLuint, :pointer], :void
+        attach_function :_glVertexAttrib4Nubv, :glVertexAttrib4Nubv, [GLuint, :pointer], :void
+
+        def glVertexAttrib4Nubv(index, value)
+          _glVertexAttrib4Nubv(index, array_to_pointer(value, GLubyte))
+        end
+
+        attach_function :_glVertexAttrib4Nuiv, :glVertexAttrib4Nuiv, [GLuint, :pointer], :void
+
+        def glVertexAttrib4Nuiv(index, value)
+          _glVertexAttrib4Nuiv(index, array_to_pointer(value, GLuint))
+        end
+
+        attach_function :_glVertexAttrib4Nusv, :glVertexAttrib4Nusv, [GLuint, :pointer], :void
+
+        def glVertexAttrib4Nusv(index, value)
+          _glVertexAttrib4Nusv(index, array_to_pointer(value, GLushort))
+        end
+
+        attach_function :_glVertexAttrib4bv, :glVertexAttrib4bv, [GLuint, :pointer], :void
+
+        def glVertexAttrib4bv(index, value)
+          _glVertexAttrib4bv(index, array_to_pointer(value, GLbyte))
+        end
+
         attach_function :glVertexAttrib4d,           [GLuint, GLdouble, GLdouble, GLdouble, GLdouble], :void
-        attach_function :glVertexAttrib4dv,          [GLuint, :pointer], :void
+        attach_function :_glVertexAttrib4dv, :glVertexAttrib4dv, [GLuint, :pointer], :void
+
+        def glVertexAttrib4dv(index, value)
+          _glVertexAttrib4dv(index, array_to_pointer(value, GLdouble))
+        end
+
         attach_function :glVertexAttrib4f,           [GLuint, GLfloat, GLfloat, GLfloat, GLfloat], :void
-        attach_function :glVertexAttrib4fv,          [GLuint, :pointer], :void
-        attach_function :glVertexAttrib4iv,          [GLuint, :pointer], :void
+        attach_function :_glVertexAttrib4fv, :glVertexAttrib4fv, [GLuint, :pointer], :void
+
+        def glVertexAttrib4fv(index, value)
+          _glVertexAttrib4fv(index, array_to_pointer(value, GLfloat))
+        end
+
+        attach_function :_glVertexAttrib4iv, :glVertexAttrib4iv, [GLuint, :pointer], :void
+
+        def glVertexAttrib4iv(index, value)
+          _glVertexAttrib4iv(index, array_to_pointer(value, GLint))
+        end
+
         attach_function :glVertexAttrib4s,           [GLuint, GLshort, GLshort, GLshort, GLshort], :void
-        attach_function :glVertexAttrib4sv,          [GLuint, :pointer], :void
-        attach_function :glVertexAttrib4ubv,         [GLuint, :pointer], :void
-        attach_function :glVertexAttrib4uiv,         [GLuint, :pointer], :void
-        attach_function :glVertexAttrib4usv,         [GLuint, :pointer], :void
+        attach_function :_glVertexAttrib4sv, :glVertexAttrib4sv, [GLuint, :pointer], :void
+
+        def glVertexAttrib4sv(index, value)
+          _glVertexAttrib4sv(index, array_to_pointer(value, GLshort))
+        end
+
+        attach_function :_glVertexAttrib4ubv, :glVertexAttrib4ubv, [GLuint, :pointer], :void
+
+        def glVertexAttrib4ubv(index, value)
+          _glVertexAttrib4ubv(index, array_to_pointer(value, GLubyte))
+        end
+
+        attach_function :_glVertexAttrib4uiv, :glVertexAttrib4uiv, [GLuint, :pointer], :void
+
+        def glVertexAttrib4uiv(index, value)
+          _glVertexAttrib4uiv(index, array_to_pointer(value, GLuint))
+        end
+
+        attach_function :_glVertexAttrib4usv, :glVertexAttrib4usv, [GLuint, :pointer], :void
+
+        def glVertexAttrib4usv(index, value)
+          _glVertexAttrib4usv(index, array_to_pointer(value, GLushort))
+        end
+
         attach_function :glVertexAttribPointer,      [GLuint, GLint, GLenum, GLboolean, GLsizei, :pointer], :void
 
 
