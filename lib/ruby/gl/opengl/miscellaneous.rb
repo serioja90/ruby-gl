@@ -62,12 +62,12 @@ module Ruby
         # OpenGL 1.3
         attach_function :_glSampleCoverage, :glSampleCoverage, [GLclampf, GLboolean], :void
         def glSampleCoverage(value, invert)
-          _glSampleCoverage(value, (invert ? GL_TRUE : GL_FALSE))
+          _glSampleCoverage(value, (invert ? (invert == GL_TRUE) : GL_FALSE))
         end
 
         attach_function :_glColorMask, :glColorMask, [GLboolean, GLboolean, GLboolean, GLboolean], :void
         def glColorMask(red, green, blue, alpha)
-          r, g, b, a = [red, green, blue, alpha].map{|col| col ? GL_TRUE : GL_FALSE }
+          r, g, b, a = [red, green, blue, alpha].map{|col| col ? (col == GL_TRUE) : GL_FALSE }
           _glColorMask(r, g, b, a)
         end
 
@@ -88,7 +88,7 @@ module Ruby
         attach_function :_glEdgeFlagv, :glEdgeFlagv, [:pointer], :void
         def glEdgeFlagv(arg)
           pointer = FFI::MemoryPointer.new GLboolean, 1
-          pointer.put_uchar 0, (arg[0] ? GL_TRUE : GL_FALSE)
+          pointer.put_uchar 0, (arg[0] ? (arg[0] == GL_TRUE) : GL_FALSE)
           _glEdgeFlagv(pointer)
         end
 
@@ -117,79 +117,313 @@ module Ruby
 
         # OpenGL 1.4
         attach_function :glBlendFuncSeparate, [GLenum, GLenum, GLenum, GLenum], :void
-
         attach_function :_glMultiDrawArrays, :glMultiDrawArrays, [GLenum, :pointer, :pointer, GLsizei], :void
+
         def glMultiDrawArrays(mode, first, count, drawcount)
           _glMultiDrawArrays(mode, array_to_pointer(first, GLint), array_to_pointer(count, GLsizei), drawcount)
         end
 
-        attach_function :glMultiDrawElements,     [GLenum, :pointer, GLenum, :pointer, GLsizei], :void
+        attach_function :_glMultiDrawElements, :glMultiDrawElements, [GLenum, :pointer, GLenum, :pointer, GLsizei], :void
+
+        def glMultiDrawElements(mode, count, type, indices, drawcount)
+          indices_pointer = FFI::MemoryPointer.new :pointer, indices.size
+          indices.each_with_index do |item, i|
+            pointer = FFI::MemoryPointer.new GLint, item.size
+            pointer.write_array_of_int item
+            indices_pointer.put_pointer i, pointer
+          end
+          _glMultiDrawElements(mode, array_to_pointer(count, GLsizei), type, indices, drawcount)
+        end
+
         attach_function :glPointParameterf,       [GLenum, GLfloat], :void
-        attach_function :glPointParameterfv,      [GLenum, :pointer], :void
+        attach_function :_glPointParameterfv, :glPointParameterfv, [GLenum, :pointer], :void
+
+        def glPointParameterfv(pname, params)
+          _glPointParameterfv(pname, array_to_pointer(params, GLfloat))
+        end
+
         attach_function :glPointParameteri,       [GLenum, GLint], :void
-        attach_function :glPointParameteriv,      [GLenum, :pointer], :void
+        attach_function :_glPointParameteriv, :glPointParameteriv, [GLenum, :pointer], :void
+
+        def glPointParameteriv(pname, params)
+          glPointParameteriv(pname, array_to_pointer(params, GLint))
+        end
+
         attach_function :glFogCoordf,             [GLfloat], :void
-        attach_function :glFogCoordfv,            [:pointer], :void
+        attach_function :_glFogCoordfv, :glFogCoordfv, [:pointer], :void
+
+        def glFogCoordfv(coord)
+          _glFogCoordfv(array_to_pointer(coord, GLfloat))
+        end
+
         attach_function :glFogCoordd,             [GLdouble], :void
-        attach_function :glFogCoorddv,            [:pointer], :void
-        attach_function :glFogCoordPointer,       [GLenum, GLsizei, :pointer], :void
+        attach_function :_glFogCoorddv, :glFogCoorddv, [:pointer], :void
+
+        def glFogCoorddv(coord)
+          _glFogCoorddv(array_to_pointer(coord, GLdouble))
+        end
+
+        attach_function :_glFogCoordPointer, :glFogCoordPointer, [GLenum, GLsizei, :pointer], :void
+
+        def glFogCoordPointer(type, stride, data)
+          data_type = (type == GL_FLOAT ? GLfloat : GLdouble)
+          _glFogCoordPointer(type, stride, array_to_pointer(data, data_type))
+        end
+
         attach_function :glSecondaryColor3b,      [GLbyte, GLbyte, GLbyte], :void
-        attach_function :glSecondaryColor3bv,     [:pointer], :void
+        attach_function :_glSecondaryColor3bv, :glSecondaryColor3bv, [:pointer], :void
+
+        def glSecondaryColor3bv(color)
+          _glSecondaryColor3bv(array_to_pointer(color, GLbyte))
+        end
+
         attach_function :glSecondaryColor3d ,     [GLdouble, GLdouble, GLdouble], :void
-        attach_function :glSecondaryColor3dv,     [:pointer], :void
+        attach_function :_glSecondaryColor3dv, :glSecondaryColor3dv, [:pointer], :void
+
+        def glSecondaryColor3dv(color)
+          _glSecondaryColor3dv(array_to_pointer(color, GLdouble))
+        end
+
         attach_function :glSecondaryColor3f,      [GLfloat, GLfloat, GLfloat], :void
-        attach_function :glSecondaryColor3fv,     [:pointer], :void
+        attach_function :_glSecondaryColor3fv, :glSecondaryColor3fv, [:pointer], :void
+
+        def glSecondaryColor3fv(color)
+          _glSecondaryColor3fv(array_to_pointer(color, GLfloat))
+        end
+
         attach_function :glSecondaryColor3i,      [GLint, GLint, GLint], :void
-        attach_function :glSecondaryColor3iv,     [:pointer], :void
+        attach_function :_glSecondaryColor3iv, :glSecondaryColor3iv, [:pointer], :void
+
+        def glSecondaryColor3iv(color)
+          _glSecondaryColor3iv(array_to_pointer(color, GLint))
+        end
+
         attach_function :glSecondaryColor3s,      [GLshort, GLshort, GLshort], :void
-        attach_function :glSecondaryColor3sv,     [:pointer], :void
+        attach_function :_glSecondaryColor3sv, :glSecondaryColor3sv, [:pointer], :void
+
+        def glSecondaryColor3sv(color)
+          _glSecondaryColor3sv(array_to_pointer(color, GLshort))
+        end
+
         attach_function :glSecondaryColor3ub,     [GLubyte, GLubyte, GLubyte], :void
-        attach_function :glSecondaryColor3ubv,    [:pointer], :void
+        attach_function :_glSecondaryColor3ubv, :glSecondaryColor3ubv, [:pointer], :void
+
+        def glSecondaryColor3ubv(color)
+          _glSecondaryColor3ubv(array_to_pointer(color, GLubyte))
+        end
+
         attach_function :glSecondaryColor3ui,     [GLuint, GLuint, GLuint], :void
-        attach_function :glSecondaryColor3uiv,    [:pointer], :void
+        attach_function :_glSecondaryColor3uiv, :glSecondaryColor3uiv, [:pointer], :void
+
+        def glSecondaryColor3uiv(color)
+          _glSecondaryColor3uiv(array_to_pointer(color, GLuint))
+        end
+
         attach_function :glSecondaryColor3us,     [GLushort, GLushort, GLushort], :void
-        attach_function :glSecondaryColor3usv,    [:pointer], :void
-        attach_function :glSecondaryColorPointer, [GLint, GLenum, GLsizei, :pointer], :void
+        attach_function :_glSecondaryColor3usv, :glSecondaryColor3usv, [:pointer], :void
+
+        def glSecondaryColor3usv(color)
+          _glSecondaryColor3usv(array_to_pointer(color, GLushort))
+        end
+
+        attach_function :_glSecondaryColorPointer, :glSecondaryColorPointer, [GLint, GLenum, GLsizei, :pointer], :void
+
+        def glSecondaryColorPointer(size, type, stride, pointer)
+          data_type = case type
+          when GL_BYTE          then GLbyte
+          when GL_UNSIGNED_BYTE then GLubyte
+          when GL_SHORT         then GLshort
+          when GL_UNSIGNED_SHORT then GLushort
+          when GL_INT            then GLint
+          when GL_UNSIGNED_INT   then GLuint
+          when GL_DOUBLE         then GLdouble
+          else
+            GLfloat
+          end
+          _glSecondaryColorPointer(size, type, stride, array_to_pointer(pointer, data_type))
+        end
+
         attach_function :glWindowPos2d,           [GLdouble, GLdouble], :void
-        attach_function :glWindowPos2dv,          [:pointer], :void
+        attach_function :_glWindowPos2dv, :glWindowPos2dv, [:pointer], :void
+
+        def glWindowPos2dv(coords)
+          _glWindowPos2dv(array_to_pointer(coords, GLdouble))
+        end
+
         attach_function :glWindowPos2f,           [GLfloat, GLfloat], :void
-        attach_function :glWindowPos2fv,          [:pointer], :void
+        attach_function :_glWindowPos2fv, :glWindowPos2fv, [:pointer], :void
+
+        def glWindowPos2fv(coords)
+          _glWindowPos2fv(array_to_pointer(coords, GLfloat))
+        end
+
         attach_function :glWindowPos2i,           [GLint, GLint], :void
-        attach_function :glWindowPos2iv,          [:pointer], :void
+        attach_function :_glWindowPos2iv, :glWindowPos2iv, [:pointer], :void
+
+        def glWindowPos2iv(coords)
+          _glWindowPos2iv(array_to_pointer(coords, GLint))
+        end
+
         attach_function :glWindowPos2s,           [GLshort, GLshort], :void
-        attach_function :glWindowPos2sv,          [:pointer], :void
+        attach_function :_glWindowPos2sv, :glWindowPos2sv, [:pointer], :void
+
+        def glWindowPos2sv(coords)
+          _glWindowPos2sv(array_to_pointer(coords, GLshort))
+        end
+
         attach_function :glWindowPos3d,           [GLdouble, GLdouble, GLdouble], :void
-        attach_function :glWindowPos3dv,          [:pointer], :void
+        attach_function :_glWindowPos3dv, :glWindowPos3dv, [:pointer], :void
+
+        def glWindowPos3dv(coords)
+          _glWindowPos3dv(array_to_pointer(coords, GLdouble))
+        end
+
         attach_function :glWindowPos3f,           [GLfloat, GLfloat, GLfloat], :void
-        attach_function :glWindowPos3fv,          [:pointer], :void
+        attach_function :_glWindowPos3fv, :glWindowPos3fv, [:pointer], :void
+
+        def glWindowPos3fv(coords)
+          _glWindowPos3fv(array_to_pointer(coords, GLfloat))
+        end
+
         attach_function :glWindowPos3i,           [GLint, GLint, GLint], :void
-        attach_function :glWindowPos3iv,          [:pointer], :void
+        attach_function :_glWindowPos3iv, :glWindowPos3iv, [:pointer], :void
+
+        def glWindowPos3iv(coords)
+          _glWindowPos3iv(array_to_pointer(coords, GLint))
+        end
+
         attach_function :glWindowPos3s,           [GLshort, GLshort, GLshort], :void
-        attach_function :glWindowPos3sv,          [:pointer], :void
+        attach_function :_glWindowPos3sv, :glWindowPos3sv, [:pointer], :void
+
+        def glWindowPos3sv(coords)
+          _glWindowPos3sv(array_to_pointer(coords, GLshort))
+        end
+
         attach_function :glBlendColor,            [GLfloat, GLfloat, GLfloat, GLfloat], :void
         attach_function :glBlendEquation,         [GLenum], :void
 
 
         # OpenGL 1.5
-        attach_function :glGenQueries,           [GLsizei, :pointer], :void
-        attach_function :glDeleteQueries,        [GLsizei, :pointer], :void
-        attach_function :glIsQuery,              [GLuint], GLboolean
+        attach_function :_glGenQueries, :glGenQueries, [GLsizei, :pointer], :void
+
+        def glGenQueries(num)
+          pointer = FFI::MemoryPointer.new GLuint, num
+          _glGenQueries(num, pointer)
+
+          return pointer.read_array_of_uint num
+        end
+
+        attach_function :_glDeleteQueries, :glDeleteQueries, [GLsizei, :pointer], :void
+
+        def glDeleteQueries(ids)
+          _glDeleteQueries(ids.size, array_to_pointer(ids, GLint))
+        end
+
+        attach_function :_glIsQuery, :glIsQuery, [GLuint], GLboolean
+
+        def glIsQuery(id)
+          return (_glIsQuery(id) == GL_TRUE)
+        end
+
         attach_function :glBeginQuery,           [GLenum, GLuint], :void
         attach_function :glEndQuery,             [GLenum], :void
-        attach_function :glGetQueryiv,           [GLenum, GLenum, :pointer], :void
-        attach_function :glGetQueryObjectiv,     [GLuint, GLenum, :pointer], :void
-        attach_function :glGetQueryObjectuiv,    [GLuint, GLenum, :pointer], :void
+        attach_function :_glGetQueryiv, :glGetQueryiv, [GLenum, GLenum, :pointer], :void
+
+        def glGetQueryiv(target, pname)
+          pointer = FFI::MemoryPointer.new GLint
+          _glGetQueryiv(target, pname, pointer)
+
+          return pointer.get_int 0
+        end
+
+        attach_function :_glGetQueryObjectiv, :glGetQueryObjectiv, [GLuint, GLenum, :pointer], :void
+
+        def glGetQueryObjectiv(id, pname)
+          pointer = FFI::MemoryPointer.new GLint
+          _glGetQueryObjectiv(id, pname, pointer)
+
+          return pointer.get_int 0
+        end
+
+        attach_function :_glGetQueryObjectuiv, :glGetQueryObjectuiv, [GLuint, GLenum, :pointer], :void
+
+        def glGetQueryObjectuiv(id, pname)
+          pointer = FFI::MemoryPointer.new GLuint
+          _glGetQueryObjectuiv(id, pname, pointer)
+
+          return pointer.get_uint 0
+        end
+
         attach_function :glBindBuffer,           [GLenum, GLuint], :void
-        attach_function :glDeleteBuffers,        [GLsizei, :pointer], :void
-        attach_function :glGenBuffers,           [GLsizei, :pointer], :void
-        attach_function :glIsBuffer,             [GLuint], GLboolean
-        attach_function :glBufferData,           [GLenum, :pointer, :pointer, GLenum], :void
-        attach_function :glBufferSubData,        [GLenum, :pointer, :pointer, :pointer], :void
-        attach_function :glGetBufferSubData,     [GLenum, :pointer, :pointer, :pointer], :void
+        attach_function :_glDeleteBuffers, :glDeleteBuffers, [GLsizei, :pointer], :void
+
+        def glDeleteBuffers(buffers)
+          _glDeleteBuffers(buffers.size, array_to_pointer(buffers, GLuint))
+        end
+
+        attach_function :_glGenBuffers, :glGenBuffers, [GLsizei, :pointer], :void
+
+        def glGenBuffers(num)
+          pointer = FFI::MemoryPointer.new GLuint, num
+          _glGenBuffers(num, pointer)
+
+          return pointer.read_array_of_uint num
+        end
+
+        attach_function :_glIsBuffer, :glIsBuffer, [GLuint], GLboolean
+
+        def glIsBuffer(buffer)
+          return (_glIsBuffer(buffer) == GL_TRUE)
+        end
+
+        attach_function :_glBufferData, :glBufferData, [GLenum, GLsizei, :pointer, GLenum], :void
+
+        # This implementation of glBufferData() is a little bit different from the
+        # original one implemented in OpenGL, because it requires data type instead
+        # of data size. Use one of types defined under Types module to specify
+        # the type of data. Also the size of data will be returned.
+        def glBufferData(target, type, data, usage)
+          size = FFI.find_type(type).size * data.size
+          _glBufferData(target, size, array_to_pointer(data, type), usage)
+
+          return size
+        end
+
+        attach_function :_glBufferSubData, :glBufferSubData, [GLenum, GLsizei, GLsizei, :pointer], :void
+
+        def glBufferSubData(target, offset, type, data)
+          size = FFI.find_type(type).size * data.size
+          _glBufferSubData(target, offset, size, array_to_pointer(data, type))
+
+          return size
+        end
+
+        attach_function :_glGetBufferSubData, :glGetBufferSubData, [GLenum, GLsizei, GLsizei, :pointer], :void
+
+        def glGetBufferSubData(target, offset, type, data)
+          size = FFI.find_type(type).size * data.size
+          _glGetBufferSubData(target, offset, size, array_to_pointer(data, type))
+
+          return size
+        end
+
         attach_function :glMapBuffer,            [GLenum, GLenum], :void
-        attach_function :glUnmapBuffer,          [GLenum], GLboolean
-        attach_function :glGetBufferParameteriv, [GLenum, GLenum, :pointer], :void
-        attach_function :glGetBufferPointerv,    [GLenum, GLenum, :pointer], :void
+        attach_function :_glUnmapBuffer, :glUnmapBuffer, [GLenum], GLboolean
+
+        def glUnmapBuffer(target)
+          return (_glUnmapBuffer(target) == GL_TRUE)
+        end
+
+        attach_function :_glGetBufferParameteriv, :glGetBufferParameteriv, [GLenum, GLenum, :pointer], :void
+
+        def glGetBufferParameteriv(target, value)
+          pointer = FFI::MemoryPointer.new GLint
+          _glGetBufferParameteriv(target, value, pointer)
+
+          return pointer.get_int 0
+        end
+
+        attach_function :glGetBufferPointerv,     [GLenum, GLenum, :pointer], :void
 
 
         # OpenGL 2.0
